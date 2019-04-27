@@ -15,16 +15,19 @@ void testData(Weather train, Weather data) {
 // Use the training data to predict the testing data.
 // Compare the predictions to the actual values.
 void predict(Weather train, Weather test) {
-    // This is where kMeans is called
+    // Call generateCentroids()
+    // Call kMeans(points, centroids)
     // Call function kNN(points, centroids, test) 
     //    - This function uses the kMeans to predict the test data
 }
 
-// Generate random centroid locations
+// Generate random centroid locations.
+// Centroids locations should be returned.
 void generateCentroids() {
 }
 
-// Perform k-means clustering 
+// Perform k-means clustering.
+// Centroids and points should be passed in.
 void kMeans() {
   /* Approach:
       1. Identify the closest points to each centroid; this forms the

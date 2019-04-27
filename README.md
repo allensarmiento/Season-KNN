@@ -1,6 +1,10 @@
 # Season-Clusters  
 Project 2 - Attempting to predict the season based on mean temperature and sea level pressure  
 
+## Questions to Consider:
+  * What do we parallelize and how do we implement it?
+  * How do we conduct prediction?
+
 ## TODO:  
 1. Import the dataset (Month, Mean temperature, Sea Level Pressure)  
 2. Figure out which station is which  

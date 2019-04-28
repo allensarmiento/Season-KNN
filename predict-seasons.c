@@ -4,7 +4,7 @@
 #include <string.h>
 
 // Reads in the specified column values from the csv filename.
-void generateData(char fname[], int col) {
+int * generateData(char fname[], int col) {
   char* token;
   char line[30];
   const char delim[2] = ",";
@@ -89,7 +89,7 @@ void kNN() {
 // Calculate the euclidean distance between two points.
 double euclideanDistance(int x1, int y1, int x2, int y2) {
   // NOTE: Pow might need to take in a double, check if this works.
-  return sqrt( pow(x1 - x2, 2) + pow(y1 - y2, 2) )
+  return sqrt( pow(x1 - x2, 2) + pow(y1 - y2, 2) );
 }
 
 int main() {

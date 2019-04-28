@@ -2,14 +2,24 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #define ARRAYSIZE 3321
 
+// Weather struct object representing a single entry from the dataset.
 typedef struct Weather {
   int month;
   float temp;
   float slp;
 } Weather;
+
+// Contains the current centroids, which indicate the centers of two clusters.
+// Both c1 and c2 should be updated after the addition of a new point in its
+// cluster, respectively.
+typedef struct Centroids {
+  Weather c1;
+  Weather c2;
+} Centroids;
 
 // Takes in a csv file specified by fname and returns a pointer to an array of
 // weather objects.
@@ -41,6 +51,21 @@ Weather* generateData(char fname[]) {
   return weatherData;
 }
 
+// Generate random centroid locations. This function should only be called once
+// and returns a struct containing two random centroids from the data passed in.
+Centroids* generateCentroids(Weather* data) {
+  Centroids* c = (Centroids *)malloc(sizeof(Centroids));
+
+  srand(time(NULL)); // Generate 1st centroid coords
+  int i = rand() % ARRAYSIZE + 1;
+  c->c1 = data[i];
+
+  srand(time(NULL)*i); // Generate 2nd centroid coords
+  i = rand() % ARRAYSIZE + 1;
+  c->c2 = data[i];
+  return c;
+}
+
 /*
 // Takes in a percentage of the weather data as training data at random.
 void trainData(float percentage, Weather data) {
@@ -58,11 +83,6 @@ void predict(Weather train, Weather test) {
     // Call kMeans(points, centroids)
     // Call function kNN(points, centroids, test) 
     //    - This function uses the kMeans to predict the test data
-}
-
-// Generate random centroid locations.
-// Centroids locations should be returned.
-void generateCentroids() {
 }
 
 // Perform k-means clustering.
@@ -117,5 +137,11 @@ int main() {
   printf("Generating dataset\n");
   Weather* data = generateData(filename);
   printf("Dataset created.\n");
+
+  printf("Generating first centroids.\n");
+  Centroids* cent = generateCentroids(data);
+  printf("First centroids generated.\n");
+  printf("\tc1 = (%f, %f)\n", cent->c1.temp, cent->c1.slp);
+  printf("\tc2 = (%f, %f)\n", cent->c2.temp, cent->c2.slp);
   return 0;
 }

@@ -27,6 +27,27 @@ typedef struct Cluster {
   int count;
 } Cluster;
 
+// Clears the array containing the points belonging to the cluster
+void clearPoints(struct Cluster* c) {
+  for (int i = 0; i < c->count; i++) {
+    if (c->c[i].temp != 0 && c->c[i].slp != 0) {
+      c->c[i].temp = 0;
+      c->c[i].slp = 0;
+    } else {
+      break;
+    }
+  }
+  c->count = 0;
+}
+
+// Prints the array containing the points belonging to the cluster
+void printPoints(struct Cluster *c) {
+  for (int i = 0; i < c->count; i++) {
+    printf("(%f, %f)", c->c[i].temp, c->c[i].slp);
+  }
+  printf("\n\n");
+}
+
 // Take in a csv filename
 // Return a pointer to an array of weather objects
 Weather* generateData(char fname[]) {
@@ -66,6 +87,7 @@ Cluster* initCluster(Weather* data, int seed) {
 
   srand(time(NULL)*seed); // Generate 1st centroid coords
   int i = rand() % ARRAYSIZE + 1;
+  c->c = (Weather *)malloc(ARRAYSIZE * sizeof(Weather));
   c->centroid = data[i];
   c->count = 0;
   return c;
@@ -76,13 +98,33 @@ float euclideanDistance(float x1, float y1, float x2, float y2) {
   return sqrt( pow(x1 - x2, 2) + pow(y1 - y2, 2) );
 }
 
+// Take in a cluster, and recompute the centroid location based on the
+// datapoints
+Weather adjustCentroid(Cluster* c) {
+  float sum_temp = 0;
+  float sum_slp = 0;
+
+  for (int i = 0; i < c->count; i++) {
+    sum_temp += c->c[i].temp;
+    sum_slp += c->c[i].slp;
+  }
+
+  Weather centroid;
+  centroid.temp = sum_temp / c->count;
+  centroid.slp = sum_slp / c->count;
+  return centroid;
+}
+
 // Perform k-means clustering.
 // Centroids and points should be passed in.
 void kMeans(Weather* data, Cluster* c1, Cluster* c2) {
   float localDistanceC1;
   float localDistanceC2;
+  clearPoints(c1);
+  clearPoints(c2);
 
-  #pragma omp parallel private(localDistanceC1, localDistanceC2) shared(c1, c2) {
+  #pragma omp parallel private(localDistanceC1, localDistanceC2) shared(c1, c2) 
+  {
     localDistanceC1 = 0;
     localDistanceC2 = 0;
 
@@ -100,8 +142,30 @@ void kMeans(Weather* data, Cluster* c1, Cluster* c2) {
             data[i].slp,
             c2->centroid.temp,
             c2->centroid.slp);
+
+        if (localDistanceC1 <= localDistanceC2) {
+          int position = c1->count;
+          c1->c[position].temp = data[i].temp;
+          c1->c[position].slp = data[i].slp;
+          c1->count++;
+        } else {
+          int position = c2->count;
+          c2->c[position] = data[i];
+          c2->count++;
+        }
       }
   }
+
+  printf("Printing the first cluster:\n");
+  printPoints(c1);
+
+  printf("Printing the second cluster:\n");
+  printPoints(c2);
+
+  // Calculate the mean of c1 and adjust centers
+  Weather new_position = adjustCentroid(c1);
+  printf("New centroid 1 position:\n");
+  printf("(%f, %f)\n\n", new_position.temp, new_position.slp);
 
   // Approach:
   //    1. Identify the closest points to each centroid; this forms the
@@ -155,7 +219,7 @@ int main() {
   printf("Complete.\n\n");
 
   printf("Executing kmeans...\n");
-  //kmeans(data, cluster1, cluster2);
+  kMeans(data, cluster1, cluster2);
   printf("kmeans complete.\n\n");
 
   return 0;

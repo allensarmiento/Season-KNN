@@ -88,6 +88,7 @@ Cluster* initCluster(Weather* data, int size, int month) {
 }
 
 // Perform k-means clustering.
+// The centroid is computed by taking the mean of the datapoints.
 Cluster* kMeans(Cluster *c) {
   int sum_temp = 0;
   int sum_slp = 0;

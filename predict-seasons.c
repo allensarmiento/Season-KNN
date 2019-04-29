@@ -159,10 +159,12 @@ Weather* trainData(int portion, Weather* data) {
 Weather* testData(int portion, Weather* data) {
   Weather *test = (Weather *)malloc(sizeof(Weather) * portion);
 
+  int count = 0;
   for (int i = ARRAYSIZE - 1; i >= portion; i--) {
-    test[i].month = data[i].month;  
-    test[i].temp = data[i].temp;
-    test[i].slp = data[i].slp;
+    test[count].month = data[i].month;  
+    test[count].temp = data[i].temp;
+    test[count].slp = data[i].slp;
+    count++;
   }
 
   return test;
@@ -176,6 +178,11 @@ float euclideanDistance(float x1, float y1, float x2, float y2) {
 // Takes in the test data, points, and centroids to make predictions.
 void kNN(Cluster* c1, Cluster* c2, Weather* testdata, int testlength) {
   for (int i = 0; i < testlength; i++) {
+    // Comparing only winter and summer
+    if (testdata[i].month != 1 && testdata[i].month != 7) {
+      continue;
+    }
+
     float distanceToC1 = euclideanDistance(c1->centroid.temp, c1->centroid.slp, 
                                            testdata[i].temp, testdata[i].slp);
     float distanceToC2 = euclideanDistance(c2->centroid.temp, c2->centroid.slp, 
@@ -183,10 +190,8 @@ void kNN(Cluster* c1, Cluster* c2, Weather* testdata, int testlength) {
 
     if (distanceToC1 <= distanceToC2) {
       printf("Prediction: month = 1, Actual: %d\n", testdata[i].month);
-      printf("(%f, %f)\n", testdata[i].temp, testdata[i].slp);
     } else {
       printf("Prediction: month = 7, Actual: %d\n", testdata[i].month);
-      printf("(%f, %f)\n", testdata[i].temp, testdata[i].slp);
     }
   }
 }
@@ -200,13 +205,19 @@ int main() {
   printf("Generating training data of 75 percent...\n");
   int train_length = 2491;
   Weather *train = trainData(train_length, data);
+  for (int i = 0; i < train_length; i++) {
+    printf("%d, %f, %f\n", train[i].month, train[i].temp, train[i].slp);
+  }
   printf("Training data created.\n\n");
 
   printf("Generating testing data of 25 percent...\n");
   int test_length = 830;
   Weather *test = testData(test_length, data);
+  for (int i = 0; i < test_length; i++) {
+    printf("%d, %f, %f\n", test[i].month, test[i].temp, test[i].slp);
+  }
   printf("Testing data created.\n\n");
-
+  
   printf("Init first cluster...\n");
   Cluster* cluster1 = initCluster(data, train_length, 1);
   printf("Initialization complete.\n\n");

@@ -177,6 +177,9 @@ float euclideanDistance(float x1, float y1, float x2, float y2) {
 
 // Takes in the test data, points, and centroids to make predictions.
 void kNN(Cluster* c1, Cluster* c2, Weather* testdata, int testlength) {
+  int correct = 0;
+  int incorrect = 0;
+
   for (int i = 0; i < testlength; i++) {
     // Comparing only winter and summer
     if (testdata[i].month != 1 && testdata[i].month != 7) {
@@ -190,10 +193,21 @@ void kNN(Cluster* c1, Cluster* c2, Weather* testdata, int testlength) {
 
     if (distanceToC1 <= distanceToC2) {
       printf("Prediction: month = 1, Actual: %d\n", testdata[i].month);
+      if (testdata[i].month == 1) 
+        correct++;
+      else
+        incorrect++;
     } else {
       printf("Prediction: month = 7, Actual: %d\n", testdata[i].month);
+      if (testdata[i].month == 7)
+        correct++;
+      else
+        incorrect++;
     }
   }
+
+  printf("Correct: %d\n", correct);
+  printf("Incorrect: %d\n", incorrect);
 }
 
 int main() {

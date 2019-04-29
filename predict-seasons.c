@@ -7,21 +7,28 @@
 
 #define ARRAYSIZE 3321
 
-// Weather struct object representing a single entry from the dataset.
+// Weather struct reprsenting a single entry from the dataset.
+//    month - month data column
+//    temp - mean temperature column
+//    slp - sea level pressure column 
 typedef struct Weather {
   int month;
   float temp;
   float slp;
 } Weather;
 
+// Cluster struct
+//    c - allocate memory to hold weather data
+//    centroid - location of centroid
+//    count - number of points in c
 typedef struct Cluster {
   Weather* c;
   Weather centroid;
   int count;
 } Cluster;
 
-// Takes in a csv file specified by fname and returns a pointer to an array of
-// weather objects.
+// Take in a csv filename
+// Return a pointer to an array of weather objects
 Weather* generateData(char fname[]) {
   char* token;
   char line[30];
@@ -53,18 +60,19 @@ Weather* generateData(char fname[]) {
 // Initialize a cluster and select a random Weather entry as the first centroid.
 // This function should only be called once and returns a struct containing a
 // Cluster object.
+// A seed value is passed in to ensure different data.
 Cluster* initCluster(Weather* data, int seed) {
   Cluster* c = (Cluster *)malloc(sizeof(Cluster));
 
   srand(time(NULL)*seed); // Generate 1st centroid coords
   int i = rand() % ARRAYSIZE + 1;
   c->centroid = data[i];
+  c->count = 0;
   return c;
 }
 
 // Calculate the euclidean distance between two points.
 float euclideanDistance(float x1, float y1, float x2, float y2) {
-  // NOTE: Pow might need to take in a double, check if this works.
   return sqrt( pow(x1 - x2, 2) + pow(y1 - y2, 2) );
 }
 
@@ -74,26 +82,26 @@ void kMeans(Weather* data, Cluster* c1, Cluster* c2) {
   float localDistanceC1;
   float localDistanceC2;
 
-#pragma omp parallel private(localDistanceC1, localDistanceC2) shared(c) {
-  localDistanceC1 = 0;
-  localDistanceC2 = 0;
+  #pragma omp parallel private(localDistanceC1, localDistanceC2) shared(c1, c2) {
+    localDistanceC1 = 0;
+    localDistanceC2 = 0;
 
-#pragma omp for schedule(static, 1)
-  for (int i=0; i<ARRAYSIZE; ++i) {
-    localDistanceC1 = euclideanDistance(
-        data[i].temp,
-        data[i].slp,
-        c1->centroid.temp,
-        c1->centroid.slp);
+    #pragma omp for schedule(static, 1)
+      for (int i=0; i<ARRAYSIZE; ++i) {
+        // Calculate distance between first cluster and second cluster.
+        localDistanceC1 = euclideanDistance(
+            data[i].temp,
+            data[i].slp,
+            c1->centroid.temp,
+            c1->centroid.slp);
 
-    localDistanceC2 = euclideanDistance(
-        data[i].temp,
-        data[i].slp,
-        c2->centroid.temp,
-        c2->centroid.slp);
+        localDistanceC2 = euclideanDistance(
+            data[i].temp,
+            data[i].slp,
+            c2->centroid.temp,
+            c2->centroid.slp);
+      }
   }
-
-}
 
   // Approach:
   //    1. Identify the closest points to each centroid; this forms the
@@ -130,7 +138,7 @@ void kMeans(Weather* data, Cluster* c1, Cluster* c2) {
 
 int main() {
   char filename[] = "./data/socal_weather.csv";
-  printf("Generating dataset\n");
+  printf("Generating dataset...\n");
   Weather* data = generateData(filename);
   printf("Dataset created.\n\n");
 
@@ -145,6 +153,10 @@ int main() {
   printf("\tCluster 2 centroid: (%f, %f)\n",
       cluster2->centroid.temp, cluster2->centroid.slp);
   printf("Complete.\n\n");
+
+  printf("Executing kmeans...\n");
+  //kmeans(data, cluster1, cluster2);
+  printf("kmeans complete.\n\n");
 
   return 0;
 }

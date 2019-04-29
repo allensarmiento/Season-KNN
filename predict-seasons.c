@@ -7,21 +7,36 @@
 
 #define ARRAYSIZE 3321
 
-// Weather struct object representing a single entry from the dataset.
+// Weather struct reprsenting a single entry from the dataset.
+//    month - month data column
+//    temp - mean temperature column
+//    slp - sea level pressure column 
 typedef struct Weather {
   int month;
   float temp;
   float slp;
 } Weather;
 
+// Cluster struct
+//    c - allocate memory to hold weather data
+//    centroid - location of centroid
+//    count - number of points in c
 typedef struct Cluster {
   Weather* c;
   Weather centroid;
   int count;
 } Cluster;
 
-// Takes in a csv file specified by fname and returns a pointer to an array of
-// weather objects.
+// Prints the array containing the points belonging to the cluster
+void printPoints(struct Cluster *c) {
+  for (int i = 0; i < c->count; i++) {
+    printf("(%f, %f)", c->c[i].temp, c->c[i].slp);
+  }
+  printf("\n\n");
+}
+
+// Take in a csv filename
+// Return a pointer to an array of weather objects
 Weather* generateData(char fname[]) {
   char* token;
   char line[30];
@@ -50,114 +65,199 @@ Weather* generateData(char fname[]) {
   return weatherData;
 }
 
-// Initialize a cluster and select a random Weather entry as the first centroid.
-// This function should only be called once and returns a struct containing a
-// Cluster object.
-Cluster* initCluster(Weather* data, int seed) {
+// Initialize the cluster taking in the following:
+//    - data: data imported from csv file
+//    - size: size of the training data
+//    - month: month we want data for 
+Cluster* initCluster(Weather* data, int size, int month) {
   Cluster* c = (Cluster *)malloc(sizeof(Cluster));
+  c->c = (Weather *)malloc((size-400) * sizeof(Weather)); // Ran out of memory allocation, so subtracted 400
+  c->count = 0;
 
-  srand(time(NULL)*seed); // Generate 1st centroid coords
-  int i = rand() % ARRAYSIZE + 1;
-  c->centroid = data[i];
+  for (int i = 0; i < size; i++) {
+    if (data[i].month == month) {
+      int position = c->count;
+      c->c[position].month = data[i].month;
+      c->c[position].temp = data[i].temp;
+      c->c[position].slp = data[i].slp;
+      c->count += 1;
+    }
+  }
+
   return c;
+}
+
+// Perform k-means clustering.
+// The centroid is computed by taking the mean of the datapoints.
+Cluster* kMeans(Cluster *c) {
+  int sum_temp = 0;
+  int sum_slp = 0;
+
+  for (int i = 0; i < c->count; i++) {
+    sum_temp += c->c[i].temp;
+    sum_slp += c->c[i].slp;
+  }
+
+  c->centroid.temp = sum_temp / c->count;
+  c->centroid.slp = sum_slp / c->count;
+
+  return c;
+}
+
+/*void other(Weather* data, Cluster* c1, Cluster* c2) {
+  float localDistanceC1;
+  float localDistanceC2;
+
+  #pragma omp parallel private(localDistanceC1, localDistanceC2) shared(c1, c2) 
+  {
+    localDistanceC1 = 0;
+    localDistanceC2 = 0;
+
+    #pragma omp for schedule(static, 1)
+      for (int i=0; i<ARRAYSIZE; ++i) {
+        localDistanceC1 = euclideanDistance(
+            data[i].temp,
+            data[i].slp,
+            c1->centroid.temp,
+            c1->centroid.slp);
+
+        localDistanceC2 = euclideanDistance(
+            data[i].temp,
+            data[i].slp,
+            c2->centroid.temp,
+            c2->centroid.slp);
+
+        if (localDistanceC1 <= localDistanceC2) {
+          int position = c1->count;
+          c1->c[position].temp = data[i].temp;
+          c1->c[position].slp = data[i].slp;
+          c1->count++;
+        } else {
+          int position = c2->count;
+          c2->c[position] = data[i];
+          c2->count++;
+        }
+      }
+  }
+}*/
+
+// Takes in a percentage of the weather data as training data at random.
+Weather* trainData(int portion, Weather* data) {
+  Weather *train = (Weather *)malloc(sizeof(Weather) * portion);
+
+  for (int i = 0; i < portion; i++) {
+    train[i].month = data[i].month;  
+    train[i].temp = data[i].temp;
+    train[i].slp = data[i].slp;
+  }
+
+  return train;
+}
+
+// Evaluates which data is not used in the training data and sets those
+// as testing data.
+Weather* testData(int portion, Weather* data) {
+  Weather *test = (Weather *)malloc(sizeof(Weather) * portion);
+
+  int count = 0;
+  for (int i = ARRAYSIZE - 1; i >= portion; i--) {
+    test[count].month = data[i].month;  
+    test[count].temp = data[i].temp;
+    test[count].slp = data[i].slp;
+    count++;
+  }
+
+  return test;
 }
 
 // Calculate the euclidean distance between two points.
 float euclideanDistance(float x1, float y1, float x2, float y2) {
-  // NOTE: Pow might need to take in a double, check if this works.
   return sqrt( pow(x1 - x2, 2) + pow(y1 - y2, 2) );
 }
 
-// Perform k-means clustering.
-// Centroids and points should be passed in.
-void kMeans(Weather* data, Cluster* c1, Cluster* c2) {
-  float localDistanceC1;
-  float localDistanceC2;
+// Takes in the test data, points, and centroids to make predictions.
+void kNN(Cluster* c1, Cluster* c2, Weather* testdata, int testlength) {
+  int correct = 0;
+  int incorrect = 0;
 
-#pragma omp parallel private(localDistanceC1, localDistanceC2) shared(c) {
-  localDistanceC1 = 0;
-  localDistanceC2 = 0;
+  for (int i = 0; i < testlength; i++) {
+    // Comparing only winter and summer
+    if (testdata[i].month != 1 && testdata[i].month != 7) {
+      continue;
+    }
 
-#pragma omp for schedule(static, 1)
-  for (int i=0; i<ARRAYSIZE; ++i) {
-    localDistanceC1 = euclideanDistance(
-        data[i].temp,
-        data[i].slp,
-        c1->centroid.temp,
-        c1->centroid.slp);
+    float distanceToC1 = euclideanDistance(c1->centroid.temp, c1->centroid.slp, 
+                                           testdata[i].temp, testdata[i].slp);
+    float distanceToC2 = euclideanDistance(c2->centroid.temp, c2->centroid.slp, 
+                                           testdata[i].temp, testdata[i].slp);
 
-    localDistanceC2 = euclideanDistance(
-        data[i].temp,
-        data[i].slp,
-        c2->centroid.temp,
-        c2->centroid.slp);
+    if (distanceToC1 <= distanceToC2) {
+      printf("Prediction: month = 1, Actual: %d\n", testdata[i].month);
+      if (testdata[i].month == 1) 
+        correct++;
+      else
+        incorrect++;
+    } else {
+      printf("Prediction: month = 7, Actual: %d\n", testdata[i].month);
+      if (testdata[i].month == 7)
+        correct++;
+      else
+        incorrect++;
+    }
   }
 
-}
-
-  // Approach:
-  //    1. Identify the closest points to each centroid; this forms the
-  //       grouping.
-  //    2. In parallel, calculate the euclidean distance between each centroid
-  //       and points in its grouping.
-  //    3. If the euclidean distance is not proportional, move centroids and
-  //       repeat calculation
-  //    4. Centroids are now in place, can now apply training and testing data
-  //
-  // Pseudocode:
-  //   
-  //   # NOTE: This can be done in parallel, partition the points
-  //   #       and pass in the coordinates of each centroid to evaluate
-  //   for point in points:
-  //      min_distance = None 
-  //      centroid_number = None
-  //      for centroid in centroids:
-  //        if euclideanDistance(point, centroid) < min_distance:
-  //            min_distance = euclideanDistance(point, centroid)
-  //            centroid_number = centroid
-  //      addGrouping(point, centroid_number)
-  //
-  //   # In parallel, calculate the distance between each point and its
-  //   # centroid.
-  //   values = []
-  //   for points in centroid_group:
-  //      values.append( euclideanDistance(points, centroid) ) 
-  //          
-  //   if centroid location is bad:
-  //      # Call function recursively
-  //      kMeans(points, centroids)
+  printf("Correct: %d\n", correct);
+  printf("Incorrect: %d\n", incorrect);
 }
 
 int main() {
   char filename[] = "./data/socal_weather.csv";
-  printf("Generating dataset\n");
+  printf("Generating dataset...\n");
   Weather* data = generateData(filename);
   printf("Dataset created.\n\n");
 
-  printf("Init first cluster and random centroid.\n");
-  Cluster* cluster1 = initCluster(data, 1);
-  printf("\tCluster 1 centroid: (%f, %f)\n",
-      cluster1->centroid.temp, cluster1->centroid.slp);
-  printf("Complete.\n\n");
+  printf("Generating training data of 75 percent...\n");
+  int train_length = 2491;
+  Weather *train = trainData(train_length, data);
+  for (int i = 0; i < train_length; i++) {
+    printf("%d, %f, %f\n", train[i].month, train[i].temp, train[i].slp);
+  }
+  printf("Training data created.\n\n");
 
-  printf("Init second cluster and random centroid.\n");
-  Cluster* cluster2 = initCluster(data, 12);
-  printf("\tCluster 2 centroid: (%f, %f)\n",
-      cluster2->centroid.temp, cluster2->centroid.slp);
-  printf("Complete.\n\n");
+  printf("Generating testing data of 25 percent...\n");
+  int test_length = 830;
+  Weather *test = testData(test_length, data);
+  for (int i = 0; i < test_length; i++) {
+    printf("%d, %f, %f\n", test[i].month, test[i].temp, test[i].slp);
+  }
+  printf("Testing data created.\n\n");
+  
+  printf("Init first cluster...\n");
+  Cluster* cluster1 = initCluster(data, train_length, 1);
+  printf("Initialization complete.\n\n");
+  printf("Computing kmeans of cluster 1...\n");
+  cluster1 = kMeans(cluster1);
+    printf("Centroid 1 location: (%f, %f)\n", 
+           cluster1->centroid.temp, cluster1->centroid.slp);
+  printf("Centroid calculation complete.\n\n");
+
+  printf("Init second cluster...\n");
+  Cluster* cluster2 = initCluster(data, train_length, 7);
+  printf("Initialization complete.\n\n");
+  printf("Computing kmeans of cluster 2...\n");
+  cluster2 = kMeans(cluster2);
+    printf("Centroid 2 location: (%f, %f)\n", 
+           cluster2->centroid.temp, cluster2->centroid.slp);
+  printf("Centroid calculation complete.\n\n");
+
+  printf("Executing knn...\n");
+  kNN(cluster1, cluster2, test, test_length);
+  printf("knn complete.\n\n");
 
   return 0;
 }
 
 /*
-// Takes in a percentage of the weather data as training data at random.
-void trainData(float percentage, Weather data) {
-}
-
-// Evaluates which data is not used in the training data and sets those
-// as testing data.
-void testData(Weather train, Weather data) {
-}
 
 // Use the training data to predict the testing data.
 // Compare the predictions to the actual values.
@@ -169,9 +269,6 @@ void predict(Weather train, Weather test) {
 }
 
 
-// Takes in the test data, points, and centroids to make predictions.
-void kNN() {
-}
 
 
 */

@@ -104,42 +104,51 @@ Cluster* kMeans(Cluster *c) {
   return c;
 }
 
-/*void other(Weather* data, Cluster* c1, Cluster* c2) {
-  float localDistanceC1;
-  float localDistanceC2;
+// Calculate the euclidean distance between two points.
+float euclideanDistance(float x1, float y1, float x2, float y2) {
+  return sqrt( pow(x1 - x2, 2) + pow(y1 - y2, 2) );
+}
 
-  #pragma omp parallel private(localDistanceC1, localDistanceC2) shared(c1, c2) 
+void kNNParallel(Cluster* c1, Cluster* c2, Weather* testdata, int testlength) {
+  int correct = 0, incorrect = 0;
+  int localCorrect, localIncorrect;
+  float localDistanceC1, localDistanceC2;
+
+  #pragma omp parallel private(localDistanceC1, localDistanceC2, localCorrect, localIncorrect) shared(c1, c2) 
   {
-    localDistanceC1 = 0;
-    localDistanceC2 = 0;
-
+    localCorrect = 0;
+    localIncorrect = 0;
     #pragma omp for schedule(static, 1)
-      for (int i=0; i<ARRAYSIZE; ++i) {
-        localDistanceC1 = euclideanDistance(
-            data[i].temp,
-            data[i].slp,
-            c1->centroid.temp,
-            c1->centroid.slp);
+      for (int i=0; i<testlength; ++i) {
+        if (testdata[i].month == 1 || testdata[i].month == 7) {
+          localDistanceC1 = euclideanDistance(testdata[i].temp, testdata[i].slp,
+                                              c1->centroid.temp, c1->centroid.slp);
 
-        localDistanceC2 = euclideanDistance(
-            data[i].temp,
-            data[i].slp,
-            c2->centroid.temp,
-            c2->centroid.slp);
+          localDistanceC2 = euclideanDistance(testdata[i].temp, testdata[i].slp,
+                                              c2->centroid.temp, c2->centroid.slp);
 
-        if (localDistanceC1 <= localDistanceC2) {
-          int position = c1->count;
-          c1->c[position].temp = data[i].temp;
-          c1->c[position].slp = data[i].slp;
-          c1->count++;
-        } else {
-          int position = c2->count;
-          c2->c[position] = data[i];
-          c2->count++;
+          if (localDistanceC1 <= localDistanceC2) {
+            if (testdata[i].month == 1)
+              localCorrect++;
+            else
+              localIncorrect++;
+          } else {
+            if (testdata[i].month == 7)
+              localCorrect++;
+            else
+              localIncorrect++;
+          }
         }
       }
+
+    #pragma omp critical
+      correct += localCorrect;
+      incorrect += localIncorrect;
   }
-}*/
+  
+  printf("Correct: %d\n", correct);
+  printf("Incorrect: %d\n", incorrect);
+}
 
 // Takes in a percentage of the weather data as training data at random.
 Weather* trainData(int portion, Weather* data) {
@@ -168,11 +177,6 @@ Weather* testData(int portion, Weather* data) {
   }
 
   return test;
-}
-
-// Calculate the euclidean distance between two points.
-float euclideanDistance(float x1, float y1, float x2, float y2) {
-  return sqrt( pow(x1 - x2, 2) + pow(y1 - y2, 2) );
 }
 
 // Takes in the test data, points, and centroids to make predictions.
@@ -211,11 +215,13 @@ void kNN(Cluster* c1, Cluster* c2, Weather* testdata, int testlength) {
 }
 
 int main() {
+  // Data generation
   char filename[] = "./data/socal_weather.csv";
   printf("Generating dataset...\n");
   Weather* data = generateData(filename);
   printf("Dataset created.\n\n");
 
+  // Training and test data partition
   printf("Generating training data of 75 percent...\n");
   int train_length = 2491;
   Weather *train = trainData(train_length, data);
@@ -232,6 +238,7 @@ int main() {
   }
   printf("Testing data created.\n\n");
   
+  // Cluster initialization
   printf("Init first cluster...\n");
   Cluster* cluster1 = initCluster(data, train_length, 1);
   printf("Initialization complete.\n\n");
@@ -250,9 +257,31 @@ int main() {
            cluster2->centroid.temp, cluster2->centroid.slp);
   printf("Centroid calculation complete.\n\n");
 
-  printf("Executing knn...\n");
+  // Sequential and parallel KNN execution
+  clock_t t;
+  double timeTaken;
+  printf("Executing sequential knn...\n");
+  t = clock();
   kNN(cluster1, cluster2, test, test_length);
-  printf("knn complete.\n\n");
+  t = clock() - t;
+  timeTaken = ((double)t) / CLOCKS_PER_SEC;
+  printf("Sequential knn complete.\n");
+  printf("Sequential knn execution time: %f\n\n", timeTaken);
+
+  printf("Executing parallel knn...\n");
+  t = clock();
+  kNNParallel(cluster1, cluster2, test, test_length);
+  t = clock() - t;
+  timeTaken = ((double)t) / CLOCKS_PER_SEC;
+  printf("Parallel knn complete.\n");
+  printf("Parallel knn execution time: %f\n\n", timeTaken);
+
+  // Garbage clean
+  free(data);
+  free(train);
+  free(test);
+  free(cluster1);
+  free(cluster2);
 
   return 0;
 }

@@ -82,10 +82,66 @@ float euclideanDistance(float x1, float y1, float x2, float y2) {
   return sqrt( pow(x1 - x2, 2) + pow(y1 - y2, 2) );
 }
 
+double largestDistance(double *distances, int length) {
+  double largest = -99;
+  for (int i = 0; i < length; i++) {
+    if (distances[i] > largest)
+      largest = distances[i];
+  }
+  return largest;
+}
+
+typedef struct Neighbors {
+  int *months;
+  double *distances;
+  int position;
+} Neighbors;
+
+Neighbors sort(Neighbors n) {
+  for (int i = 0; i < n.position - 1; i++) {
+    for (int j = 1; j < n.position - i - 1; j++) {
+      if (n.distances[j] > n.distances[i]) {
+        double temp_dist = n.distances[j];
+        n.distances[j] = n.distances[i];
+        n.distances[i] = temp_dist;
+
+        int temp_month = n.months[j];
+        n.months[j] = n.months[i];
+        n.months[i] = temp_month;
+      }
+    }
+  }
+
+  return n;
+}
+
+Neighbors addValue(Neighbors n, double distance, int month) {
+  for (int i = n.position - 1; i >= 0; i--) {
+    if (distance < n.distances[i]) {
+      n.distances[i] = distance;
+      n.months[i] = month;
+      break;
+    }
+  }
+  return n;
+}
+
+void printNeighbors(Neighbors n) {
+  for (int i = 0; i < n.position; i++) {
+    printf("Months: %d, Distance: %f\n", n.months[i], n.distances[i]);
+  }
+}
+
 // Takes in the test data, points, and centroids to make predictions.
-void kNN(Weather* traindata, int trainlength, Weather* testdata, int testlength) {
+// knn - how many points to compare to
+// traindata - training data
+// trainlength - length of training data
+// testdata - test data
+// testlength - length of testing data
+void kNN(int knn, Weather* traindata, int trainlength, Weather* testdata, int testlength) {
   int correct = 0;
   int incorrect = 0;
+  Neighbors n;
 
   for (int i = 0; i < testlength; i++) {
     // Comparing only winter and summer
@@ -93,8 +149,10 @@ void kNN(Weather* traindata, int trainlength, Weather* testdata, int testlength)
       continue;
     }
 
-    int month = 0;
-    double best_distance = -99;
+    n.months = (int*)malloc(sizeof(int) * knn);
+    n.distances = (double*)malloc(sizeof(double) * knn);
+    n.position = 0;
+    double best_max = -99; // best maximum value in array
 
     for (int j = 0; j < trainlength; j++) {
       // Comparing only winter and summer
@@ -104,20 +162,46 @@ void kNN(Weather* traindata, int trainlength, Weather* testdata, int testlength)
 
       double distance = euclideanDistance(traindata[j].temp, traindata[j].slp, 
                                           testdata[i].temp, testdata[i].slp);
-      if (best_distance == -99 || distance <= best_distance) {
-        best_distance = distance;
-        month = traindata[j].month;
+      if (best_max == -99 || distance < best_max) {
+        if (n.position >= knn) {
+          // Find position to replace
+          n = addValue(n, distance, traindata[j].month);
+        } else {
+          n.distances[n.position] = distance;
+          n.months[n.position] = traindata[j].month;
+        }
+        best_max = largestDistance(n.distances, n.position);
+        n = sort(n);
+        if (n.position < knn) {
+          n.position++;
+        }
       }
     }
 
-    if (month == testdata[i].month) {
-      printf("Predicted: %d, Actual: %d\n", month, testdata[i].month);
+    int summer_count = 0;
+    int winter_count = 0;
+    int prediction;
+    for (int i = 0; i < n.position; i++) {
+      if (n.months[i] == 1) winter_count++;
+      else if (n.months[i] == 7) summer_count++;
+    }
+
+    if (winter_count >= summer_count) {
+      prediction = 1; 
+    } else {
+      prediction = 7;
+    }
+
+    printf("Predicted: %d, Actual: %d\n", prediction, testdata[i].month);
+    if (prediction == testdata[i].month) {
       correct++;
     } else {
-      printf("Predicted: %d, Actual: %d\n", month, testdata[i].month);
       incorrect++;
     }
   }
+
+  free(n.months);
+  free(n.distances);
 
   printf("Correct: %d\n", correct);
   printf("Incorrect: %d\n", incorrect);
@@ -152,7 +236,7 @@ int main() {
   double timeTaken;
   printf("Executing sequential knn...\n");
   t = clock();
-  kNN(train, train_length, test, test_length);
+  kNN(3, train, train_length, test, test_length);
   t = clock() - t;
   timeTaken = ((double)t) / CLOCKS_PER_SEC;
   printf("Sequential knn complete.\n");
@@ -165,21 +249,4 @@ int main() {
 
   return 0;
 }
-
-/*
-
-// Use the training data to predict the testing data.
-// Compare the predictions to the actual values.
-void predict(Weather train, Weather test) {
-    // Call generateCentroids()
-    // Call kMeans(points, centroids)
-    // Call function kNN(points, centroids, test) 
-    //    - This function uses the kMeans to predict the test data
-}
-
-
-
-
-*/
-
 

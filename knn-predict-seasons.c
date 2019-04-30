@@ -17,14 +17,6 @@ typedef struct Weather {
   float slp;
 } Weather;
 
-// Prints the array containing the points belonging to the cluster
-void printPoints(struct Cluster *c) {
-  for (int i = 0; i < c->count; i++) {
-    printf("(%f, %f)", c->c[i].temp, c->c[i].slp);
-  }
-  printf("\n\n");
-}
-
 // Take in a csv filename
 // Return a pointer to an array of weather objects
 Weather* generateData(char fname[]) {
@@ -95,8 +87,6 @@ void kNN(Weather* traindata, int trainlength, Weather* testdata, int testlength)
   int correct = 0;
   int incorrect = 0;
 
-  Weather* predictions;
-
   for (int i = 0; i < testlength; i++) {
     // Comparing only winter and summer
     if (testdata[i].month != 1 && testdata[i].month != 7) {
@@ -104,15 +94,28 @@ void kNN(Weather* traindata, int trainlength, Weather* testdata, int testlength)
     }
 
     int month = 0;
-    double best_distance = 0;
+    double best_distance = -99;
 
     for (int j = 0; j < trainlength; j++) {
+      // Comparing only winter and summer
+      if (traindata[j].month != 1 && traindata[j].month != 7) {
+        continue;
+      }
+
       double distance = euclideanDistance(traindata[j].temp, traindata[j].slp, 
                                           testdata[i].temp, testdata[i].slp);
-      if (best_distance == 0 || distance < best_distance) {
+      if (best_distance == -99 || distance <= best_distance) {
         best_distance = distance;
         month = traindata[j].month;
       }
+    }
+
+    if (month == testdata[i].month) {
+      printf("Predicted: %d, Actual: %d\n", month, testdata[i].month);
+      correct++;
+    } else {
+      printf("Predicted: %d, Actual: %d\n", month, testdata[i].month);
+      incorrect++;
     }
   }
 
@@ -144,50 +147,21 @@ int main() {
   }
   printf("Testing data created.\n\n");
   
-  // Cluster initialization
-  printf("Init first cluster...\n");
-  Cluster* cluster1 = initCluster(data, train_length, 1);
-  printf("Initialization complete.\n\n");
-  printf("Computing kmeans of cluster 1...\n");
-  cluster1 = kMeans(cluster1);
-    printf("Centroid 1 location: (%f, %f)\n", 
-           cluster1->centroid.temp, cluster1->centroid.slp);
-  printf("Centroid calculation complete.\n\n");
-
-  printf("Init second cluster...\n");
-  Cluster* cluster2 = initCluster(data, train_length, 7);
-  printf("Initialization complete.\n\n");
-  printf("Computing kmeans of cluster 2...\n");
-  cluster2 = kMeans(cluster2);
-    printf("Centroid 2 location: (%f, %f)\n", 
-           cluster2->centroid.temp, cluster2->centroid.slp);
-  printf("Centroid calculation complete.\n\n");
-
-  // Sequential and parallel KNN execution
+  // Sequential KNN execution
   clock_t t;
   double timeTaken;
   printf("Executing sequential knn...\n");
   t = clock();
-  kNN(cluster1, cluster2, test, test_length);
+  kNN(train, train_length, test, test_length);
   t = clock() - t;
   timeTaken = ((double)t) / CLOCKS_PER_SEC;
   printf("Sequential knn complete.\n");
   printf("Sequential knn execution time: %f\n\n", timeTaken);
 
-  printf("Executing parallel knn...\n");
-  t = clock();
-  kNNParallel(cluster1, cluster2, test, test_length);
-  t = clock() - t;
-  timeTaken = ((double)t) / CLOCKS_PER_SEC;
-  printf("Parallel knn complete.\n");
-  printf("Parallel knn execution time: %f\n\n", timeTaken);
-
   // Garbage clean
   free(data);
   free(train);
   free(test);
-  free(cluster1);
-  free(cluster2);
 
   return 0;
 }

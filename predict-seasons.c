@@ -17,6 +17,10 @@ typedef struct Weather {
   float slp;
 } Weather;
 
+// Neighbors struct representing the neighbors of a Weather datapoint.
+//    months - dynamic array of months, parallel array with distances
+//    distances - dynamic array of distances, parallel array with months
+//    position - the number of values in the array
 typedef struct Neighbors {
   int *months;
   double *distances;
@@ -53,8 +57,9 @@ Weather* generateData(char fname[]) {
   return weatherData;
 }
 
-
-// Takes in a percentage of the weather data as training data at random.
+// Partition the Weather data for training.
+// int portion - Partition of data to consider as training data
+// Weather* data - The entire text file stored in a Weather object
 Weather* trainData(int portion, Weather* data) {
   Weather *train = (Weather *)malloc(sizeof(Weather) * portion);
 
@@ -67,8 +72,9 @@ Weather* trainData(int portion, Weather* data) {
   return train;
 }
 
-// Evaluates which data is not used in the training data and sets those
-// as testing data.
+// Partition the Weather data for testing.
+// int portion - Partition of data to consider as testing data
+// Weather* data - The entire text file stored in a Weather object
 Weather* testData(int portion, Weather* data) {
   Weather *test = (Weather *)malloc(sizeof(Weather) * portion);
 
@@ -88,6 +94,9 @@ float euclideanDistance(float x1, float y1, float x2, float y2) {
   return sqrt( pow(x1 - x2, 2) + pow(y1 - y2, 2) );
 }
 
+// Return the largest distance in the distances array.
+// double* distances - Distances array in the Neighbors object
+// int length - size of the distances array
 double largestDistance(double *distances, int length) {
   double largest = -99;
   for (int i = 0; i < length; i++) {
@@ -97,7 +106,9 @@ double largestDistance(double *distances, int length) {
   return largest;
 }
 
-
+// Sort the values in Neighbors based on the temperature.
+// Since months is a parallel array, we arrange the order based
+// on temperature.
 Neighbors sort(Neighbors n) {
   for (int i = 0; i < n.position - 1; i++) {
     for (int j = 1; j < n.position - i - 1; j++) {
@@ -116,6 +127,16 @@ Neighbors sort(Neighbors n) {
   return n;
 }
 
+// Adds the new value into the n array.
+// Neighbors n - The current neighbors object
+// double distance - Distance to add into the array
+// int month - Month to add into the array
+// 
+// How this works:
+// Find the largest element to replace with the new distance
+// and month. If we find a position, perform a swap and end the
+// function. If no positions were found, the original neighbors
+// object is returned.
 Neighbors addValue(Neighbors n, double distance, int month) {
   for (int i = n.position - 1; i >= 0; i--) {
     if (distance < n.distances[i]) {
@@ -127,6 +148,8 @@ Neighbors addValue(Neighbors n, double distance, int month) {
   return n;
 }
 
+// Prints the months and distances of the neighbors object
+// for debugging purposes.
 void printNeighbors(Neighbors n) {
   for (int i = 0; i < n.position; i++) {
     printf("Months: %d, Distance: %f\n", n.months[i], n.distances[i]);
@@ -140,30 +163,51 @@ void printNeighbors(Neighbors n) {
 // testdata - test data
 // testlength - length of testing data
 void kNN(int knn, Weather* traindata, int trainlength, Weather* testdata, int testlength) {
-  int correct = 0;
-  int incorrect = 0;
+  // Neighbors object 
   Neighbors n;
 
+  // Number of correct and incorrect answers
+  int correct = 0;
+  int incorrect = 0;
+
+  // Iterate through all the test data points to conduct knn prediction
   for (int i = 0; i < testlength; i++) {
     // Comparing only winter and summer
     if (testdata[i].month != 1 && testdata[i].month != 7) {
       continue;
     }
 
+    // Allocate the months and distances array depending on the size of knn
     n.months = (int*)malloc(sizeof(int) * knn);
     n.distances = (double*)malloc(sizeof(double) * knn);
+    
+    // Current number of elements in the months and distances array.
+    // This also represents the position to add new elements.
     n.position = 0;
-    double best_max = -99; // best maximum value in array
 
+    // Best maximum value in the array of months and distances
+    double best_max = -99;
+
+    // Compare the test data point to each training data point
     for (int j = 0; j < trainlength; j++) {
       // Comparing only winter and summer
       if (traindata[j].month != 1 && traindata[j].month != 7) {
         continue;
       }
 
+      // Calculate the distance from the testing datapoint to the current
+      // training data point.
       double distance = euclideanDistance(traindata[j].temp, traindata[j].slp, 
                                           testdata[i].temp, testdata[i].slp);
+      
+      // If a better calculated distance is found, then it needs to add to
+      // the neighbors object or replace an element.
       if (best_max == -99 || distance < best_max) {
+
+        // If we maxed out on the months and distances array, then an element
+        // needs to be replaced.
+        // If we haven't maxed out on the months and distances array, then just
+        // place at the n.position place.
         if (n.position >= knn) {
           // Find position to replace
           n = addValue(n, distance, traindata[j].month);
@@ -171,28 +215,47 @@ void kNN(int knn, Weather* traindata, int trainlength, Weather* testdata, int te
           n.distances[n.position] = distance;
           n.months[n.position] = traindata[j].month;
         }
+
+        // Get the new largest distance, to compare against other calculated
+        // distances.
         best_max = largestDistance(n.distances, n.position);
+
+        // Sort the values in the months and distances array to allow the addValue function
+        // to work.
         n = sort(n);
+
+        // If we haven't filled up on max positions of months and distances, so move the position
+        // over for the next entry.
         if (n.position < knn) {
           n.position++;
         }
       }
     }
 
+    // Summer and winter count to be able to determine which month to classify
+    // a point.
     int summer_count = 0;
     int winter_count = 0;
+
+    // The predicted month.
     int prediction;
+
+    // Iterate through the array to calculate the number of 
+    // winter and summer.
     for (int i = 0; i < n.position; i++) {
       if (n.months[i] == 1) winter_count++;
       else if (n.months[i] == 7) summer_count++;
     }
 
+    // Determine which prediction to classify the test datapoint.
     if (winter_count >= summer_count) {
       prediction = 1; 
     } else {
       prediction = 7;
     }
 
+
+    // Print and update results.
     printf("Predicted: %d, Actual: %d\n", prediction, testdata[i].month);
     if (prediction == testdata[i].month) {
       correct++;
@@ -204,6 +267,7 @@ void kNN(int knn, Weather* traindata, int trainlength, Weather* testdata, int te
   free(n.months);
   free(n.distances);
 
+  // Display the number of correct and incorrect answers.
   printf("Correct: %d\n", correct);
   printf("Incorrect: %d\n", incorrect);
 }

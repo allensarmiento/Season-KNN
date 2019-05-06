@@ -55,31 +55,35 @@ void knnParallel(int k, Weather* traindata, int trainlen,
   int winterCount, summerCount, prediction;
 
   for (int i = 0; i < testlen; ++i) {
-    winterCount = 0;
-    summerCount = 0;
-    Neighbors n = getNeighbors(traindata, trainlen, testdata[i], k);
-    for (int j = 0; j < n.position; ++j) {
-      if (n.months[j] == 1) {
-        winterCount++;
-      } else if (n.months[j] == 7) {
-        summerCount++;
+    if (testdata[i].month == 1 || testdata[i].month == 7) {
+      winterCount = 0;
+      summerCount = 0;
+
+      Neighbors n = getNeighbors(traindata, trainlen, testdata[i], k);
+
+      for (int j = 0; j < n.position; ++j) {
+        if (n.months[j] == 1) {
+          winterCount++;
+        } else if (n.months[j] == 7) {
+          summerCount++;
+        }
       }
-    }
 
-    if (winterCount >= summerCount) {
-      prediction = 1;
-    } else {
-      prediction = 7;
-    }
+      if (winterCount >= summerCount) {
+        prediction = 1;
+      } else {
+        prediction = 7;
+      }
 
-    if (prediction == testdata[i].month) {
-      correct++;
-    } else {
-      incorrect++;
-    }
-    free(n.distances);
-    free(n.months);
+      if (prediction == testdata[i].month) {
+        correct++;
+      } else {
+        incorrect++;
+      }
 
+      free(n.distances);
+      free(n.months);
+    }
   }
 
   printf("Correct: %d\n", correct);

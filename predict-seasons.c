@@ -1,9 +1,5 @@
 #include <stdio.h>
 #include <time.h>
-#include "utility.h"
-#include "structs.h"
-#include "KnnSequential.h"
-#include "KnnParallel.h"
 
 int main() {
   // Data generation

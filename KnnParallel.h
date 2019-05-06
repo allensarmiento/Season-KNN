@@ -18,7 +18,7 @@ Neighbors getNeighbors(Weather* traindata, int trainlen,
 
   #pragma omp parallel shared(n, bestMax) private(dist, i)
   {
-    #pragma omp for schedule(static, 4)
+    #pragma omp for schedule(auto)
       for (i = 0; i < trainlen; ++i) {
         if (traindata[i].month == 1 || traindata[i].month == 7) {
           dist = euclideanDistance(traindata[i].temp, traindata[i].slp,

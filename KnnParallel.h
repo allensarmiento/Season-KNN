@@ -18,24 +18,28 @@ Neighbors getNeighbors(Weather* traindata, int trainlen,
 
   #pragma omp parallel shared(n, bestMax) private(dist, i)
   {
-    #pragma omp for
+    #pragma omp for schedule(static, 4)
       for (i = 0; i < trainlen; ++i) {
         if (traindata[i].month == 1 || traindata[i].month == 7) {
           dist = euclideanDistance(traindata[i].temp, traindata[i].slp,
               testInstance.temp, testInstance.slp);
 
-          if (bestMax == -1 || dist < bestMax) {
-            if (n.position >= k) {
-              n = addValue(n, dist, traindata[i].month);
-            } else {
-              n.distances[n.position] = dist;
-              n.months[n.position] = traindata[i].month;
-            }
-            bestMax = largestDistance(n.distances, k);
-            n = sort(n);
+          #pragma omp critical
+          {
+            if (bestMax == -1 || dist < bestMax) {
+              if (n.position >= k) {
+                n = addValue(n, dist, traindata[i].month);
+              } else {
+                n.distances[n.position] = dist;
+                n.months[n.position] = traindata[i].month;
+              }
 
-            if (n.position < k) {
-              n.position++;
+              bestMax = largestDistance(n.distances, k);
+              n = sort(n);
+
+              if (n.position < k) {
+                n.position++;
+              }
             }
           }
         }
@@ -53,7 +57,6 @@ void knnParallel(int k, Weather* traindata, int trainlen,
   for (int i = 0; i < testlen; ++i) {
     winterCount = 0;
     summerCount = 0;
-    printf("Getting neighbors for testdata[%d]\n", i);
     Neighbors n = getNeighbors(traindata, trainlen, testdata[i], k);
     for (int j = 0; j < n.position; ++j) {
       if (n.months[j] == 1) {
@@ -74,6 +77,8 @@ void knnParallel(int k, Weather* traindata, int trainlen,
     } else {
       incorrect++;
     }
+    free(n.distances);
+    free(n.months);
 
   }
 

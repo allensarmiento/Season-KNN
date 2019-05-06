@@ -65,7 +65,7 @@ void knnSequential(int knn, Weather* traindata, int trainlength, Weather* testda
       prediction = 7;
     }
 
-    printf("Predicted: %d, Actual: %d\n", prediction, testdata[i].month);
+    //printf("Predicted: %d, Actual: %d\n", prediction, testdata[i].month);
     if (prediction == testdata[i].month) {
       correct++;
     } else {

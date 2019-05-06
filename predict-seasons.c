@@ -16,17 +16,11 @@ int main() {
   printf("Generating training data of 75 percent...\n");
   int train_length = 2491;
   Weather *train = trainData(train_length, data);
-  for (int i = 0; i < train_length; i++) {
-    printf("%d, %f, %f\n", train[i].month, train[i].temp, train[i].slp);
-  }
   printf("Training data created.\n\n");
 
   printf("Generating testing data of 25 percent...\n");
   int test_length = 830;
   Weather *test = testData(test_length, data);
-  for (int i = 0; i < test_length; i++) {
-    printf("%d, %f, %f\n", test[i].month, test[i].temp, test[i].slp);
-  }
   printf("Testing data created.\n\n");
   
   // Sequential KNN execution

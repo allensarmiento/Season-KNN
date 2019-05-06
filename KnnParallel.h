@@ -24,8 +24,6 @@ Neighbors getNeighbors(Weather* traindata, int trainlen,
           dist = euclideanDistance(traindata[i].temp, traindata[i].slp,
               testInstance.temp, testInstance.slp);
 
-          #pragma omp critical
-          {
             if (bestMax == -1 || dist < bestMax) {
               if (n.position >= k) {
                 n = addValue(n, dist, traindata[i].month);
@@ -34,6 +32,8 @@ Neighbors getNeighbors(Weather* traindata, int trainlen,
                 n.months[n.position] = traindata[i].month;
               }
 
+            #pragma omp critical
+            {
               bestMax = largestDistance(n.distances, k);
               n = sort(n);
 

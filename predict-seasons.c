@@ -36,7 +36,7 @@ int main() {
 
   printf("Executing parallel knn...\n");
   t = clock();
-  knnParallel(3, train, train_length, test, test_length);
+  knnParallel(5, train, train_length, test, test_length);
   t = clock() - t;
   timeTaken = ((double)t) / CLOCKS_PER_SEC;
   printf("Parallel knn complete.\n");

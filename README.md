@@ -1,9 +1,9 @@
 # Season-Clusters  
 Project 2 - Attempting to predict the season based on mean temperature and sea level pressure  
 
-## Questions to Consider:
-  * What do we parallelize and how do we implement it?
-  * How do we conduct prediction?
+## NOTE:
+1. Parallel runtime is a lot slower due to the sorting that takes place. Parallel has a sorting of  
+   a very large array while sequential only keeps track of the top k values
 
 ## TODO:  
 1. Import the dataset (Month, Mean temperature, Sea Level Pressure) [Status: COMPLETED]  

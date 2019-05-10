@@ -4,6 +4,24 @@
 #include "utility.h"
 #include "structs.h"
 
+Neighbors sort(Neighbors n) {
+  for (int i = 0; i < n.position - 1; i++) {
+    for (int j = 1; j < n.position - i - 1; j++) {
+      if (n.distances[j] > n.distances[i]) {
+        double temp_dist = n.distances[j];
+        n.distances[j] = n.distances[i];
+        n.distances[i] = temp_dist;
+
+        int temp_month = n.months[j];
+        n.months[j] = n.months[i];
+        n.months[i] = temp_month;
+      }
+    }
+  }
+
+  return n;
+}
+
 // Takes in the test data, points, and centroids to make predictions.
 // knn - how many points to compare to
 // traindata - training data
@@ -17,9 +35,8 @@ void knnSequential(int knn, Weather* traindata, int trainlength, Weather* testda
 
   for (int i = 0; i < testlength; i++) {
     // Comparing only winter and summer
-    if (testdata[i].month != 1 && testdata[i].month != 7) {
+    if (testdata[i].month != 1 && testdata[i].month != 7)
       continue;
-    }
 
     n.months = (int*)malloc(sizeof(int) * knn);
     n.distances = (double*)malloc(sizeof(double) * knn);

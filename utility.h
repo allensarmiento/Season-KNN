@@ -6,8 +6,6 @@
 #include <math.h>
 #include "structs.h"
 
-#define ARRAYSIZE 3321
-
 double largestDistance(double *distances, int length) {
   double largest = -99;
   for (int i = 0; i < length; i++) {
@@ -17,23 +15,21 @@ double largestDistance(double *distances, int length) {
   return largest;
 }
 
-Neighbors sort(Neighbors n) {
-  for (int i = 0; i < n.position - 1; i++) {
-    for (int j = 1; j < n.position - i - 1; j++) {
-      if (n.distances[j] > n.distances[i]) {
-        double temp_dist = n.distances[j];
-        n.distances[j] = n.distances[i];
-        n.distances[i] = temp_dist;
+/*void sort(int *months, double *distances, int size) {
+  for (int i = 0; i < size-1; i++) {
+    for (int j = 0; j < size - i - 1; j++) {
+      if (distances[j] > distances[j+1]) {
+        double temp_dist = distances[j];
+        distances[j] = distances[i];
+        distances[i] = temp_dist;
 
-        int temp_month = n.months[j];
-        n.months[j] = n.months[i];
-        n.months[i] = temp_month;
+        int temp_month = months[j];
+        months[j] = months[i];
+        months[i] = temp_month;
       }
     }
   }
-
-  return n;
-}
+}*/
 
 Neighbors addValue(Neighbors n, double distance, int month) {
   for (int i = n.position - 1; i >= 0; i--) {
@@ -81,35 +77,6 @@ Weather* trainData(int portion, Weather* data) {
   return train;
 }
 
-// Take in a csv filename
-// Return a pointer to an array of weather objects
-Weather* generateData(char fname[]) {
-  char* token;
-  char line[30];
-  const char delim[2] = ",";
-  int i = 0;
-
-  // allocate mem to hold weather data
-  Weather* weatherData = (Weather *)malloc(sizeof(Weather)*ARRAYSIZE);
-
-  FILE* instream = fopen(fname, "r");
-
-  // Retrieve each line until eof. Each line should contain no
-  // more than 30 characters.
-  while (fgets(line, 30, instream)) {
-    Weather w;
-    token = strtok(line, delim);
-    w.month = atoi(token);
-    token = strtok(NULL, delim);
-    w.temp = atof(token);
-    token = strtok(NULL, delim);
-    w.slp = atof(token);
-    weatherData[i] = w;
-    i++;
-  }
-  fclose(instream);
-  return weatherData;
-}
 // Calculate the euclidean distance between two points.
 float euclideanDistance(float x1, float y1, float x2, float y2) {
   return sqrt( pow(x1 - x2, 2) + pow(y1 - y2, 2) );

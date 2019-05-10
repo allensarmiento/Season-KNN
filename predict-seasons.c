@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <time.h>
+#include "readData.h"
 #include "utility.h"
 #include "structs.h"
 #include "KnnParallel.h"
@@ -14,12 +15,12 @@ int main() {
 
   // Training and test data partition
   printf("Generating training data of 75 percent...\n");
-  int train_length = 2491;
+  int train_length = 311;
   Weather *train = trainData(train_length, data);
   printf("Training data created.\n\n");
 
   printf("Generating testing data of 25 percent...\n");
-  int test_length = 830;
+  int test_length = 104;
   Weather *test = testData(test_length, data);
   printf("Testing data created.\n\n");
   
@@ -36,7 +37,7 @@ int main() {
 
   printf("Executing parallel knn...\n");
   t = clock();
-  knnParallel(5, train, train_length, test, test_length);
+  knnParallel(3, train, train_length, test, test_length);
   t = clock() - t;
   timeTaken = ((double)t) / CLOCKS_PER_SEC;
   printf("Parallel knn complete.\n");

@@ -78,6 +78,7 @@ void knnParallel(int k, Weather* trainData, int trainLen,
 
   printf("Correct: %d\n", correct);
   printf("Incorrect: %d\n", incorrect);
+
 }
 
 #endif

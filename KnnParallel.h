@@ -6,106 +6,75 @@
 #include "structs.h"
 #include "utility.h"
 
-void sortParallel(int *months, double *distances, int size) {
-  for (int i = 0; i < size-1; i++) {
-    for (int j = 0; j < size - i - 1; j++) {
-      if (distances[j] > distances[j+1]) {
-        double temp_dist = distances[j];
-        distances[j] = distances[i];
-        distances[i] = temp_dist;
-
-        int temp_month = months[j];
-        months[j] = months[i];
-        months[i] = temp_month;
-      }
-    }
-  }
-}
-
-Neighbors getNeighbors(Weather* traindata, int trainlen, 
-    Weather testInstance, int k) {
-  
-  Neighbors n;
-  n.months = (int *)malloc(sizeof(int)*k);
-  n.distances = (double *)malloc(sizeof(double)*k);
-  n.position = 0;
-  int dist, i;
-  int bestMax = -1;
-
-  int *months = (int *)malloc(sizeof(int) * trainlen);
-  double *distances = (double *)malloc(sizeof(double) * trainlen);
-
-  #pragma omp parallel shared(months, distances) private(dist, i)
-  {
-    #pragma omp for schedule(static, 4)
-      for (i = 0; i < trainlen; i++) {
-        dist = euclideanDistance(traindata[i].temp, traindata[i].slp,
-            testInstance.temp, testInstance.slp);
-        
-        distances[i] = dist;
-        months[i] = traindata[i].month;
-        
-        //printf("Added distance of %f with month %d\n", distances[i], months[i]);
-      } // end parallel for
-  } // end parallel construct
-
-  // Sort the values
-  sortParallel(months, distances, trainlen);
-
-  // Add the top knn values in Neighbors
-  //printf("Best distances: ");
-  for (int i = 0; i < k; i++) {
-    n.months[i] = months[i];
-    n.distances[i] = distances[i];
-    n.position++;
-   // printf("%f ", n.distances[i]);
-  }
-  //printf("\n");
-
-  free(months);
-  free(distances);
-
-  return n;
-}
-
-void knnParallel(int k, Weather* traindata, int trainlen,
-    Weather* testdata, int testlen) {
-  int correct = 0, incorrect = 0;
-  int winterCount, summerCount, prediction;
+void sortParallel(Distance* d, int size) {
   int i, j;
-
-  #pragma omp for schedule(static, 4)
-    for (i = 0; i < testlen; ++i) {
-      winterCount = 0;
-      summerCount = 0;
-
-      Neighbors n = getNeighbors(traindata, trainlen, testdata[i], k);
-
-      for (j = 0; j < n.position; ++j) {
-        if (n.months[j] == 1) {
-          winterCount++;
-        } else if (n.months[j] == 7) {
-          summerCount++;
-        }
+  Distance temp;
+  for (i = 0; i < size-1; ++i) {
+    for (j = 0; j < size-i-1; ++j) {
+      if (d[j].distance > d[i].distance) {
+        temp = d[j];
+        d[j] = d[i];
+        d[i] = temp;
       }
-
-      if (winterCount >= summerCount) {
-        prediction = 1;
-      } else {
-        prediction = 7;
-      }
-
-      if (prediction == testdata[i].month) {
-        //printf("%d. Correct prediction\n", i);
-        correct++;
-      } else {
-        //printf("%d. Incorrect prediction\n", i);
-        incorrect++;
-      }
-
-      free(n.distances);
-      free(n.months);
     }
+  }
+}
+
+// Retrieves the closest k neighbors from the training data.
+Distance* getNeighbors(int k, Weather* trainData,
+    int trainLen, Weather testInstance) {
+  Distance* distances = (Distance *)malloc(sizeof(Distance)*trainLen);
+  Distance* neighbors = (Distance *)malloc(sizeof(Distance)*k);
+  int i;
+
+  #pragma omp parallel shared(trainData, testInstance) private(i) 
+  {
+    #pragma omp for schedule(auto)
+    for (i = 0; i < trainLen; ++i) {
+      distances[i].distance = euclideanDistance(trainData[i].temp, trainData[i].slp,
+          testInstance.temp, testInstance.slp);
+      distances[i].month = trainData[i].month;
+    }
+  }
+
+  sortParallel(distances, trainLen);
+
+  for (i = 0; i < k; ++i) {
+    neighbors[i] = distances[i];
+  }
+
+  free(distances);
+  return neighbors;
+}
+
+void knnParallel(int k, Weather* trainData, int trainLen,
+    Weather* testData, int testLen) {
+  int i, j, winterCount, summerCount;
+  int correct = 0, incorrect = 0;
+  Distance* neighbor;
+
+  for (i = 0; i < testLen; ++i) {
+    winterCount = 0;
+    summerCount = 0;
+    neighbor = getNeighbors(k, trainData, trainLen, testData[i]);
+
+    for (j = 0; j < k; ++j) {
+      if (neighbor[j].month == 1) {
+        winterCount++;
+      } else {
+        summerCount++;
+      }
+    }
+
+    if (winterCount > summerCount && testData[i].month == 1) {
+      correct++;
+    } else if (winterCount < summerCount && testData[i].month == 7) {
+      correct++;
+    } else {
+      incorrect++;
+    }
+    free(neighbor);
+  }
 
   printf("Correct: %d\n", correct);
   printf("Incorrect: %d\n", incorrect);

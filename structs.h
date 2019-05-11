@@ -16,4 +16,9 @@ typedef struct Neighbors {
   int position;
 } Neighbors;
 
+typedef struct Distance {
+  int month;
+  float distance;
+} Distance;
+
 #endif

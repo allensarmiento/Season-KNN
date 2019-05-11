@@ -5,6 +5,7 @@
 #include "structs.h"
 #include "KnnParallel.h"
 #include "KnnSequential.h"
+#include "KnnSequentialVersion2.h"
 
 int main() {
   // Data generation
@@ -27,14 +28,24 @@ int main() {
   // Sequential KNN execution
   clock_t t;
   double timeTaken;
-  printf("Executing sequential knn...\n");
+  /*printf("Executing sequential knn...\n");
   t = clock();
   knnSequential(3, train, train_length, test, test_length);
   t = clock() - t;
   timeTaken = ((double)t) / CLOCKS_PER_SEC;
   printf("Sequential knn complete.\n");
-  printf("Sequential knn execution time: %f\n\n", timeTaken);
+  printf("Sequential knn execution time: %f\n\n", timeTaken);*/
 
+  // Sequential KNN execution version 2
+  printf("Executing sequential knn version 2...\n");
+  t = clock();
+  knnSequentialVersion2(3, train, train_length, test, test_length);
+  t = clock() - t;
+  timeTaken = ((double)t) / CLOCKS_PER_SEC;
+  printf("Sequential knn version 2 complete.\n");
+  printf("Sequential knn version 2 execution time: %f\n\n", timeTaken);
+
+  // Parallel KNN execution
   printf("Executing parallel knn...\n");
   t = clock();
   knnParallel(3, train, train_length, test, test_length);

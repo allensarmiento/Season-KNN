@@ -29,8 +29,8 @@ Neighbors sort(Neighbors n) {
 // testdata - test data
 // testlength - length of testing data
 void knnSequential(int knn, Weather* traindata, int trainlength, Weather* testdata, int testlength) {
-  int correct = 0;
-  int incorrect = 0;
+  int summer_positive = 0, summer_negative = 0,
+      winter_positive = 0, winter_negative = 0;
   Neighbors n;
 
   for (int i = 0; i < testlength; i++) {
@@ -82,19 +82,31 @@ void knnSequential(int knn, Weather* traindata, int trainlength, Weather* testda
       prediction = 7;
     }
 
-    //printf("Predicted: %d, Actual: %d\n", prediction, testdata[i].month);
-    if (prediction == testdata[i].month) {
-      correct++;
-    } else {
-      incorrect++;
+    // Counting number of true positives/negatives and false positives/negatives
+    if (prediction == 1) {
+      if (testdata[i].month == prediction) {
+        winter_positive++;
+      } else {
+        winter_negative++;
+      }
+    } else if(prediction == 7) {
+      if (testdata[i].month == prediction) {
+        summer_positive++;
+      } else {
+        summer_negative++;
+      }
     }
   }
 
   free(n.months);
   free(n.distances);
 
-  printf("Correct: %d\n", correct);
-  printf("Incorrect: %d\n", incorrect);
+  printf("Correct: %d\n", winter_positive + summer_positive);
+  printf("Incorrect: %d\n\n", winter_negative + summer_negative);
+  
+  // Printing stats, since the predicitions are only summer and winter,
+  // and not yes or no, we might not need to consider some of the stats
+  calculateStats(winter_positive, summer_positive, winter_negative, summer_negative);
 }
 
 #endif

@@ -70,7 +70,8 @@ Neighbors getNeighbors(Weather* traindata, int trainlen,
 
 void knnParallel(int k, Weather* traindata, int trainlen,
     Weather* testdata, int testlen) {
-  int correct = 0, incorrect = 0;
+  int summer_positive = 0, summer_negative = 0,
+      winter_positive = 0, winter_negative = 0;
   int winterCount, summerCount, prediction;
   int i, j;
 
@@ -95,20 +96,31 @@ void knnParallel(int k, Weather* traindata, int trainlen,
         prediction = 7;
       }
 
-      if (prediction == testdata[i].month) {
-        //printf("%d. Correct prediction\n", i);
-        correct++;
-      } else {
-        //printf("%d. Incorrect prediction\n", i);
-        incorrect++;
+      // Counting number of true positives/negatives and false positives/negatives
+      if (prediction == 1) {
+        if (testdata[i].month == prediction) {
+          winter_positive++;
+        } else {
+          winter_negative++;
+        }
+      } else if(prediction == 7) {
+        if (testdata[i].month == prediction) {
+          summer_positive++;
+        } else {
+          summer_negative++;
+        }
       }
 
       free(n.distances);
       free(n.months);
     }
 
-  printf("Correct: %d\n", correct);
-  printf("Incorrect: %d\n", incorrect);
+  printf("Correct: %d\n", winter_positive + summer_positive);
+  printf("Incorrect: %d\n\n", winter_negative + summer_negative);
+
+  // Printing stats, since the predicitions are only summer and winter,
+  // and not yes or no, we might not need to consider some of the stats
+  calculateStats(winter_positive, summer_positive, winter_negative, summer_negative);
 }
 
 #endif

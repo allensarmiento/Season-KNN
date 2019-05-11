@@ -15,22 +15,6 @@ double largestDistance(double *distances, int length) {
   return largest;
 }
 
-/*void sort(int *months, double *distances, int size) {
-  for (int i = 0; i < size-1; i++) {
-    for (int j = 0; j < size - i - 1; j++) {
-      if (distances[j] > distances[j+1]) {
-        double temp_dist = distances[j];
-        distances[j] = distances[i];
-        distances[i] = temp_dist;
-
-        int temp_month = months[j];
-        months[j] = months[i];
-        months[i] = temp_month;
-      }
-    }
-  }
-}*/
-
 Neighbors addValue(Neighbors n, double distance, int month) {
   for (int i = n.position - 1; i >= 0; i--) {
     if (distance < n.distances[i]) {
@@ -80,6 +64,29 @@ Weather* trainData(int portion, Weather* data) {
 // Calculate the euclidean distance between two points.
 float euclideanDistance(float x1, float y1, float x2, float y2) {
   return sqrt( pow(x1 - x2, 2) + pow(y1 - y2, 2) );
+}
+
+// Calculate accuracy
+void calculateStats(int TP, int TN, int FP, int FN) {
+  double accuracy = (TP + TN) / ((TP + TN + FP + FN) * 1.0);
+  printf("Accuracy: %f\n", accuracy);
+
+  double error_rate = (FP + FN) / ((TP + TN + FP + FN) * 1.0);
+  printf("Error rate: %f\n", error_rate);
+
+  double sensitivity = TP / ((TP + FN) * 1.0);
+  printf("Sensitivity: %f\n", sensitivity);
+
+  double specificity = TN / ((FP + TN) * 1.0); 
+  printf("Specificity: %f\n", specificity);
+
+  double precision = TP / ((TP + FP) * 1.0);
+  printf("Precision: %f\n", precision);
+
+  double recall = TP / ((TP + FN) * 1.0);
+  printf("Recall: %f\n", recall);
+
+  printf("\n");
 }
 
 #endif

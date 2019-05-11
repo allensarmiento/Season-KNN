@@ -43,6 +43,20 @@ Weather* generateData(char fname[]) {
   return weatherData;
 }
 
+void sortParallel(Distance* d, int size) {
+  int i, j;
+  Distance temp;
+  for (i = 0; i < size-1; ++i) {
+    for (j = 0; j < size-i-1; ++j) {
+      if (d[j].distance > d[i].distance) {
+        temp = d[j];
+        d[j] = d[i];
+        d[i] = temp;
+      }
+    }
+  }
+}
+
 double largestDistance(double *distances, int length) {
   double largest = -99;
   for (int i = 0; i < length; i++) {
@@ -52,21 +66,10 @@ double largestDistance(double *distances, int length) {
   return largest;
 }
 
-/*void sort(int *months, double *distances, int size) {
-  for (int i = 0; i < size-1; i++) {
-    for (int j = 0; j < size - i - 1; j++) {
-      if (distances[j] > distances[j+1]) {
-        double temp_dist = distances[j];
-        distances[j] = distances[i];
-        distances[i] = temp_dist;
-
-        int temp_month = months[j];
-        months[j] = months[i];
-        months[i] = temp_month;
-      }
-    }
-  }
-}*/
+// Calculate the euclidean distance between two points.
+float euclideanDistance(float x1, float y1, float x2, float y2) {
+  return sqrt( pow(x1 - x2, 2) + pow(y1 - y2, 2) );
+}
 
 Neighbors addValue(Neighbors n, double distance, int month) {
   for (int i = n.position - 1; i >= 0; i--) {
@@ -112,11 +115,6 @@ Weather* trainData(int portion, Weather* data) {
   }
 
   return train;
-}
-
-// Calculate the euclidean distance between two points.
-float euclideanDistance(float x1, float y1, float x2, float y2) {
-  return sqrt( pow(x1 - x2, 2) + pow(y1 - y2, 2) );
 }
 
 #endif

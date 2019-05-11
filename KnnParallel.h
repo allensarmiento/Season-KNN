@@ -6,21 +6,8 @@
 #include "structs.h"
 #include "utility.h"
 
-void sortParallel(Distance* d, int size) {
-  int i, j;
-  Distance temp;
-  for (i = 0; i < size-1; ++i) {
-    for (j = 0; j < size-i-1; ++j) {
-      if (d[j].distance > d[i].distance) {
-        temp = d[j];
-        d[j] = d[i];
-        d[i] = temp;
-      }
-    }
-  }
-}
-
-// Retrieves the closest k neighbors from the training data.
+// Retrieves the closest k neighbors from the training data. Returns
+// an array of Distance structs of those neighbors.
 Distance* getNeighbors(int k, Weather* trainData,
     int trainLen, Weather testInstance) {
   Distance* distances = (Distance *)malloc(sizeof(Distance)*trainLen);
@@ -31,8 +18,8 @@ Distance* getNeighbors(int k, Weather* trainData,
   {
     #pragma omp for schedule(auto)
     for (i = 0; i < trainLen; ++i) {
-      distances[i].distance = euclideanDistance(trainData[i].temp, trainData[i].slp,
-          testInstance.temp, testInstance.slp);
+      distances[i].distance = euclideanDistance(trainData[i].temp,
+          trainData[i].slp, testInstance.temp, testInstance.slp);
       distances[i].month = trainData[i].month;
     }
   }
@@ -47,11 +34,19 @@ Distance* getNeighbors(int k, Weather* trainData,
   return neighbors;
 }
 
-void knnParallel(int k, Weather* trainData, int trainLen,
+// Main driver for the K-Nearest Neighbors function. Compares each test
+// instance with the nearest neighbors, according to Euclidean distance,
+// and returns a confusion matrix. The confusion matrix has the format:
+// [summerPositive, summerNegative, winterPostive, winterNegative].
+int* knnParallel(int k, Weather* trainData, int trainLen,
     Weather* testData, int testLen) {
   int i, j, winterCount, summerCount;
-  int correct = 0, incorrect = 0;
+  int* confMatrix = (int *)malloc(sizeof(int)*4);
   Distance* neighbor;
+
+  for (i = 0; i < 4; ++i) { // Init confusion matrix
+    confMatrix[i] = 0;
+  }
 
   for (i = 0; i < testLen; ++i) {
     winterCount = 0;
@@ -66,19 +61,19 @@ void knnParallel(int k, Weather* trainData, int trainLen,
       }
     }
 
-    if (winterCount > summerCount && testData[i].month == 1) {
-      correct++;
-    } else if (winterCount < summerCount && testData[i].month == 7) {
-      correct++;
-    } else {
-      incorrect++;
+    if (winterCount < summerCount && testData[i].month == 7) {
+      confMatrix[0]++;
+    } else if (winterCount < summerCount && testData[i].month == 1) {
+      confMatrix[1]++;
+    } else if (winterCount > summerCount && testData[i].month == 1) {
+      confMatrix[2]++;
+    } else if (winterCount > summerCount && testData[i].month == 7) {
+      confMatrix[3]++;
     }
     free(neighbor);
   }
 
-  printf("Correct: %d\n", correct);
-  printf("Incorrect: %d\n", incorrect);
-
+  return confMatrix;
 }
 
 #endif

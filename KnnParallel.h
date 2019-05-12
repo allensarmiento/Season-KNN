@@ -61,14 +61,14 @@ int* knnParallel(int k, Weather* trainData, int trainLen,
       }
     }
 
-    if (winterCount < summerCount && testData[i].month == 7) {
-      confMatrix[0]++;
-    } else if (winterCount < summerCount && testData[i].month == 1) {
-      confMatrix[1]++;
-    } else if (winterCount > summerCount && testData[i].month == 1) {
-      confMatrix[2]++;
-    } else if (winterCount > summerCount && testData[i].month == 7) {
-      confMatrix[3]++;
+    if (winterCount >= summerCount && testData[i].month == 1) {
+      confMatrix[0]++; // True positive
+    } else if (winterCount >= summerCount && testData[i].month == 7) {
+      confMatrix[3]++; // False negative
+    } else if (summerCount > winterCount && testData[i].month == 7) {
+      confMatrix[1]++; // True negative
+    } else if (summerCount > winterCount && testData[i].month == 1) {
+      confMatrix[2]++; // False negative
     }
     free(neighbor);
   }

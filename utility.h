@@ -117,4 +117,33 @@ Weather* trainData(int portion, Weather* data) {
   return train;
 }
 
+// Calculate the performance measures: accuracy, error rate, sensitivity,
+// precision, recall
+//
+// int* calculations - TP, TN, FP, FN
+void evaluatePerformance(int* calculations) {
+  int TP = calculations[0],
+      TN = calculations[1],
+      FP = calculations[2],
+      FN = calculations[3];
+
+  double accuracy = (TP + TN) / ((TP + TN + FP + FN) * 1.0);
+  printf("Accuracy: %f\n", accuracy);
+
+  double errorRate = (FP + FN) / ((TP + TN + FP + FN) * 1.0);
+  printf("Error rate: %f\n", errorRate);
+
+  double sensitivity = TP / ((TP + FN) * 1.0);
+  printf("Sensitivity: %f\n", sensitivity);
+
+  double specificity = TN / ((FP + TN) * 1.0);
+  printf("Specificity: %f\n", specificity);
+
+  double precision = TP / ((TP + FP) * 1.0);
+  printf("Precision: %f\n", precision);
+
+  double recall = TP / ((TP * FN) * 1.0);
+  printf("Recall: %f\n", recall); 
+}
+
 #endif

@@ -46,6 +46,8 @@ int main() {
   printf("Incorrect: %d\n", confMatrix[1] + confMatrix[3]);
   printf("Parallel knn complete.\n");
   printf("Parallel knn execution time: %f\n\n", timeTaken);
+  // Evaluate performance of KNN Parallel
+  evaluatePerformance(confMatrix);
   free(confMatrix);
 
   // Garbage clean

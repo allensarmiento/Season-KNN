@@ -42,8 +42,8 @@ int main() {
   confMatrix = knnParallel(3, train, trainLength, test, testLength);
   t = clock() - t;
   timeTaken = ((double)t) / CLOCKS_PER_SEC;
-  printf("Correct: %d\n", confMatrix[0] + confMatrix[2]);
-  printf("Incorrect: %d\n", confMatrix[1] + confMatrix[3]);
+  printf("Correct: %d\n", confMatrix[0] + confMatrix[1]);
+  printf("Incorrect: %d\n", confMatrix[2] + confMatrix[3]);
   printf("Parallel knn complete.\n");
   printf("Parallel knn execution time: %f\n\n", timeTaken);
   // Evaluate performance of KNN Parallel

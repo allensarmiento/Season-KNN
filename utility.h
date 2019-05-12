@@ -121,7 +121,7 @@ Weather* trainData(int portion, Weather* data) {
 // precision, recall
 //
 // int* calculations - TP, TN, FP, FN
-void evaluatePerforamnce(int* calculations) {
+void evaluatePerformance(int* calculations) {
   int TP = calculations[0],
       TN = calculations[1],
       FP = calculations[2],
